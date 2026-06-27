@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Page Title</title>
+</head>
+
+<body>
+    <div id="container">
+        <div id="left">
+            <h1>TIMER</h1>
+            <p id="ao5-left">Ao5:</p>
+            <p id="ao12-left">Ao12:</p>
+            <h4>Recent Solves:</h4>
+            <ul id="solves-list"></ul>
+        </div>
+        <div id="middle">
+            <h1>scramble:</h1>
+            <!-- This element will hold the generated scramble -->
+            <p id="scramble-display">Generating scramble...</p>
+        </div>
+
+        <div id="right">
+            <p>2026</p>
+        </div>
+    </div>
+    <div id="input-container">
+        <input type="number" step="any" placeholder="Solve Time">
+        <h3 id="ao5-main">Current Ao5:</h3>
+        <h3 id="ao12-main">Current Ao12:</h3>
+    </div>
+    <div class="ad-banner-container" id="ad-banner">
+        <span class="ad-label">Ads by Google</span>
+        <button id="close-ad-btn" onclick="closeAd()">&times;</button>
+        <a id="ad-link" href="https://www.redcross.org" target="_blank">
+            <span id="ad-title">Support the Red Cross</span> — Help families affected by disasters. Click to donate.
+        </a>
+    </div>
+    <p id="bottom-right-text">Developer ModD3r_</p>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        #container {
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        #left {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 220px;
+        }
+
+        #left h1 {
+            display: inline-block;
+            border: 1.5px solid black;
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin-bottom: 15px;
+        }
+
+        #middle {
+            text-align: center;
+            border: 1.5px solid black;
+            border-radius: 10px;
+            padding: 10px 20px;
+            max-width: 55%;
+        }
+
+        #right {
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: left;
+            padding: 20px;
+            background-color: lightgrey;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px);
+            /* 100% viewport height minus padding */
+            margin: 0;
+        }
+
+        #input-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            /* Fills all remaining space in the viewport */
+        }
+
+        #input-container input {
+            border: 1.5px solid black;
+            height: 150px;
+            width: 1000px;
+            text-align: center;
+            font-size: 50px;
+            border-radius: 8px;
+        }
+
+        h3 {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        #solves-list {
+            list-style-type: none;
+            margin-top: 10px;
+            font-size: 18px;
+            padding-left: 5px;
+            max-height: calc(100vh - 220px);
+            /* Limit height of list */
+            overflow-y: auto;
+            /* Enable scrolling */
+        }
+
+        #solves-list li {
+            margin-bottom: 5px;
+        }
+
+        #bottom-right-text {
+            position: fixed;
+            /* Keeps it in the corner even if the page scrolls */
+            right: 20px;
+            /* Spacing from the right edge */
+            bottom: 20px;
+            /* Spacing from the bottom edge */
+            font-size: 14px;
+            /* Optional styling */
+            color: #555;
+            /* Optional styling */
+        }
+
+        .ad-banner-container {
+            background-color: #e0e0e0;
+            border: 1px solid #bbb;
+            padding: 10px;
+            margin: 20px auto 5px auto;
+            text-align: center;
+            border-radius: 6px;
+            max-width: 728px;
+            width: 100%;
+            font-size: 14px;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .ad-label {
+            position: absolute;
+            top: -8px;
+            left: 10px;
+            font-size: 10px;
+            color: #777;
+            background-color: lightgrey;
+            padding: 0 5px;
+        }
+
+        #ad-link {
+            color: #0056b3;
+            text-decoration: none;
+            font-family: Arial, sans-serif;
+            margin-right: 25px;
+            /* Leave space for close button */
+        }
+
+        #ad-link:hover {
+            text-decoration: underline;
+        }
+
+        #ad-title {
+            font-weight: bold;
+        }
+
+        #close-ad-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 20px;
+            font-weight: bold;
+            color: #888;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+        }
+
+        #close-ad-btn:hover {
+            color: #333;
+        }
+    </style>
+    <script>
+        // 1. Define the faces and turn modifiers
+        const faces = ['U', 'D', 'R', 'L', 'F', 'B'];
+        const modifiers = ['', "'", '2'];
+
+        // 2. Helper function to check if two faces are opposites (parallel)
+        function areOpposite(f1, f2) {
+            const opposites = {
+                'U': 'D', 'D': 'U',
+                'R': 'L', 'L': 'R',
+                'F': 'B', 'B': 'F'
+            };
+            return opposites[f1] === f2;
+        }
+
+        // 3. The scramble generator function
+        function generateScramble() {
+            const scramble = [];
+            let lastFace = '';
+            let secondLastFace = '';
+            const scrambleLength = 20; // Standard 3x3 scramble length
+
+            for (let i = 0; i < scrambleLength; i++) {
+                let face = '';
+
+                // Loop until we find a face that doesn't violate consecutive/parallel rules
+                do {
+                    face = faces[Math.floor(Math.random() * faces.length)];
+                } while (
+                    face === lastFace ||
+                    (face === secondLastFace && areOpposite(face, lastFace))
+                );
+
+                // Get a random modifier: normal, prime ('), or double (2)
+                const modifier = modifiers[Math.floor(Math.random() * modifiers.length)];
+
+                // Add the move to the scramble array
+                scramble.push(face + modifier);
+
+                // Shift historical face tracking
+                secondLastFace = lastFace;
+                lastFace = face;
+            }
+
+            // Return scramble array as a single space-separated string
+            return scramble.join(' ');
+        }
+
+        // Global array to store solve times, loaded from localStorage if it exists
+        const timesList = JSON.parse(localStorage.getItem("cubeSolves")) || [];
+
+        // Get the relevant DOM elements
+        const scrambleDisplay = document.getElementById("scramble-display");
+        const input = document.querySelector("#input-container input");
+        const solvesListElement = document.getElementById("solves-list");
+
+        // Function to update the display with a new scramble
+        function showNewScramble() {
+            if (scrambleDisplay) {
+                scrambleDisplay.textContent = generateScramble();
+            }
+        }
+
+        // Function to update the list of recent solves in HTML
+        function updateSolvesList() {
+            if (solvesListElement) {
+                solvesListElement.innerHTML = ""; // Clear existing content
+                timesList.forEach((time, index) => {
+                    const li = document.createElement("li");
+                    li.textContent = `${index + 1}. ${time}s`;
+                    solvesListElement.appendChild(li);
+                });
+            }
+        }
+
+        // Function to calculate WCA average (AoX)
+        function calculateAoX(times, n) {
+            if (times.length < n) {
+                return "-";
+            }
+            // Get the last n times as floats
+            const lastNTimes = times.slice(-n).map(t => parseFloat(t));
+            // Sort ascending
+            lastNTimes.sort((a, b) => a - b);
+            // Trim the best and worst times
+            const trimmed = lastNTimes.slice(1, -1);
+            // Calculate average of the remaining times
+            const sum = trimmed.reduce((acc, val) => acc + val, 0);
+            return (sum / (n - 2)).toFixed(2) + "s";
+        }
+
+        // Function to calculate and update all averages on the page
+        function updateAverages() {
+            const ao5 = calculateAoX(timesList, 5);
+            const ao12 = calculateAoX(timesList, 12);
+
+            // Update left sidebar elements
+            const ao5Left = document.getElementById("ao5-left");
+            const ao12Left = document.getElementById("ao12-left");
+            if (ao5Left) ao5Left.textContent = `Ao5: ${ao5}`;
+            if (ao12Left) ao12Left.textContent = `Ao12: ${ao12}`;
+
+            // Update main input elements
+            const ao5Main = document.getElementById("ao5-main");
+            const ao12Main = document.getElementById("ao12-main");
+            if (ao5Main) ao5Main.textContent = `Current Ao5: ${ao5}`;
+            if (ao12Main) ao12Main.textContent = `Current Ao12: ${ao12}`;
+        }
+
+        // 4. Update the page immediately on load (without waiting for DOMContentLoaded)
+        showNewScramble();
+        updateSolvesList(); // Load and display saved solves
+        updateAverages();   // Calculate and display saved averages
+
+        // 5. Add event listener to input element to change scramble when time is entered
+        if (input) {
+            // Submit and update scramble ONLY when pressing Enter (prevents duplicate change-event submissions)
+            input.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    submitTime();
+                }
+            });
+        }
+
+        function submitTime() {
+            const rawVal = input.value.trim();
+            if (rawVal !== "") {
+                let parsedTime;
+                // If it contains a dot, parse directly as float (seconds)
+                if (rawVal.includes('.')) {
+                    parsedTime = parseFloat(rawVal);
+                } else {
+                    // Otherwise, treat as centiseconds (e.g. 1234 -> 12.34)
+                    parsedTime = parseInt(rawVal, 10) / 100;
+                }
+
+                if (!isNaN(parsedTime)) {
+                    const formattedTime = parsedTime.toFixed(2);
+                    timesList.push(formattedTime); // Save time to the array
+                    localStorage.setItem("cubeSolves", JSON.stringify(timesList)); // Persist solves to localStorage
+                    updateSolvesList();   // Refresh the UI list
+                    updateAverages();     // Calculate and update averages
+                    showNewScramble();    // Generate new scramble
+                    input.value = "";     // Clear the input field after submitting
+                }
+            }
+        }
+
+        // Rotate between different charity links
+        const nonProfitAds = [
+            { title: "Support the Red Cross", text: "Help families affected by disasters.", url: "https://www.redcross.org", color: "#d9534f" },
+            { title: "WWF (World Wildlife Fund)", text: "Protect endangered species and their habitats.", url: "https://www.worldwildlife.org", color: "#2b8a3e" },
+            { title: "Doctors Without Borders", text: "Providing lifesaving medical care where it's needed most.", url: "https://www.doctorswithoutborders.org", color: "#ee0000" }
+        ];
+
+        function rotateAds() {
+            const adLink = document.getElementById("ad-link");
+            if (adLink) {
+                const randomAd = nonProfitAds[Math.floor(Math.random() * nonProfitAds.length)];
+                adLink.href = randomAd.url;
+                adLink.innerHTML = `<span id="ad-title" style="color: ${randomAd.color}; font-weight: bold;">${randomAd.title}</span> — ${randomAd.text} Click to donate.`;
+            }
+        }
+
+        // Rotate once on load, and then every 30 seconds
+        rotateAds();
+        setInterval(rotateAds, 30000);
+
+        // Close ad function
+        function closeAd() {
+            const adBanner = document.getElementById("ad-banner");
+            if (adBanner) {
+                adBanner.style.display = "none";
+            }
+        }
+    </script>
+</body>
+
+</html>
